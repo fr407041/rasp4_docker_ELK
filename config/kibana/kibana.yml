@@ -1,0 +1,5 @@
+server.name: kibana
+server.host: "0"
+elasticsearch.hosts: [ "http://{IP of elasticsearch, You need to change here}:9200" ]
+xpack.monitoring.ui.container.elasticsearch.enabled: false
+logging.quiet: true
