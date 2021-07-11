@@ -2,65 +2,87 @@
 
 #### Index 
 
-1. [Prepared Docker Image](#Docker_Image)
-2. [Docker Launch Command](#launch)
-3. [Check](#check)
+1. [Install 64bit Raspberry](#install)
+2. [Prepared Related Docker Image](#Docker_Image)
+3. [docker-compose.yml Command](#launch)
+4. [Check](#check)
 
 ----
+
+<a name="install"/>
+
+#### Install 64bit Raspberry
+
+* You must download 64 bit raspberry os from [https://downloads.raspberrypi.org/raspios_arm64/images/raspios_arm64-2020-08-24/2020-08-20-raspios-buster-arm64.zip](https://downloads.raspberrypi.org/raspios_arm64/images/raspios_arm64-2020-08-24/2020-08-20-raspios-buster-arm64.zip)
+
+* utilize [Rufus](https://rufus.ie/downloads/) to install above image.
+
 <a name="Docker_Image"/>
 
-#### Prepared Docker Image
+#### Prepared Related Docker Image
 
-* Thanks for `jmb12686` to create great docker ELK image in raspberry4, I have spend a lot of time to find it.
+* Dowload Elasticsearch Image from [here](https://www.docker.elastic.co/r/elasticsearch) ( I use [7.13.2-arm64](https://www.docker.elastic.co/r/elasticsearch/elasticsearch:7.13.2-arm64) )
 
-1. [jmb12686/elasticsearch](https://hub.docker.com/r/jmb12686/elasticsearch)
-```
-docker pull jmb12686/elasticsearch:latest
-```
-
-2. [jmb12686/kibana](https://hub.docker.com/r/jmb12686/kibana)
-```
-docker pull jmb12686/kibana:v7.4.1
-```
+* Dowload kibana Image from [here](https://www.docker.elastic.co/r/kibana) ( I use [7.13.2-arm64](https://www.docker.elastic.co/r/kibana/kibana:7.13.2-arm64) )
 
 ----
 <a name="launch"/>
 
-#### Docker Launch Command
+#### docker-compose.yml Command
 
-###### 1st launch elasticsearch docker image
-
-* -v `HostFolderPath`/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml : put [elasticsearch configure](config/elasticsearch/elasticsearch.yml)
-* -v HostFolderPath/data:/usr/share/elasticsearch/data:rw : storage elasticsearch data
-* -e "ES_JAVA_OPTS=-Xmx2g -Xms2g" : My suggestion is 2g, smaller than 2g may cause kibana slow...
+* You can eliminate `deploy section`, if you don't use docker swarm mode.
 
 ```
-sudo docker run -d \
---name elasticsearch \
---restart always \
--p 9200:9200 -p 9300:9300 \
--e "ES_JAVA_OPTS=-Xmx2g -Xms2g" \
--e "discovery.type=single-node" \
--v HostFolderPath/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml \
--v HostFolderPath/data:/usr/share/elasticsearch/data:rw \
-jmb12686/elasticsearch
+version: '3.6'
+networks:
+  esnet:
+    driver: "overlay"  
+services:
+  es00:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.13.2-arm64
+    hostname: es00
+    environment:
+      - cluster.name=docker-cluster
+      - node.name=es00
+      - node.data=true
+      - node.master=true
+      - bootstrap.memory_lock=true
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xmx2g -Xms2g"
+      - xpack.security.enabled=false
+      - xpack.monitoring.collection.enabled=true   
+    volumes:
+      #- /mnt/linux/Docker/ELK/elastic_storage:/usr/share/elasticsearch/data
+      - es00:/usr/share/elasticsearch/data
+    networks:
+      - esnet
+    ports:
+      - 9200:9200
+      - 9300:9300      
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+         - node.labels.role == elasticsearch
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.13.2-arm64
+    hostname: "docker_{{.Node.Hostname}}-{{.Service.Name}}"
+    environment:
+       - ELASTICSEARCH_HOSTS=http://es00:9200
+    ports:
+      - 5601:5601
+    networks:
+      - esnet
+    depends_on:
+      - es00
+    deploy:
+      placement:
+        constraints:
+          - node.labels.role == elasticsearch
+ 
+volumes:
+  es00: {}
 ```
-
-###### 2nd launch kibana docker image
-
-* -v HostFolderPath/kibana.yml:/opt/kibana/config/kibana.yml:ro : put [kibana config](config/kibana/kibana.yml)
-
-```
-sudo docker run -d \
---restart always \
--p 5601:5601 \
---name kibana \
--v HostFolderPath/kibana.yml:/opt/kibana/config/kibana.yml:ro \
-jmb12686/kibana:v7.4.1
-```
-
------
-<a name="check"/>
 
 #### Check
 
@@ -72,8 +94,4 @@ jmb12686/kibana:v7.4.1
 
 ![](tmp/check_kibana_live.png)
 
-3. Also input `docker ps -a` in your terminal to check docker status
-
-![](tmp/check_01.png)
-
-
+###### tags: `ELK` `Single Node`
