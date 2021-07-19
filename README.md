@@ -1,4 +1,4 @@
-### How to launch docker ELK in raspberry4
+# How to launch docker ELK in raspberry4
 
 #### Index 
 
@@ -6,6 +6,7 @@
 2. [Prepared Related Docker Image](#Docker_Image)
 3. [docker-compose.yml Command](#launch)
 4. [Check](#check)
+5. [kibana setting](#kibana)
 
 ----
 
@@ -84,6 +85,8 @@ volumes:
   es00: {}
 ```
 
+<a name="check"/>
+
 #### Check
 
 1. Check elasticsearch , please click `http://localhost:9200` and show below means it's work!
@@ -93,5 +96,20 @@ volumes:
 2. Check kibana, please click `http://localhost:5601` and show below means it's work!
 
 ![](tmp/check_kibana_live.png)
+
+<a name="kibana"/>
+
+#### kibana setting
+
+1. How to setting Index template by kibana
+![](https://i.imgur.com/4w6OPkL.png)
+![](https://i.imgur.com/OFXvHX9.png)
+![](https://i.imgur.com/1iIR13q.png)
+![](https://i.imgur.com/kWKwr8B.png)
+![](https://i.imgur.com/jgLmg3v.png)
+![](https://i.imgur.com/RdzQy8Z.png)
+
+
+3. 
 
 ###### tags: `ELK` `Single Node`
